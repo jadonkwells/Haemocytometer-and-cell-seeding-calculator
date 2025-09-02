@@ -78,9 +78,11 @@
   center it within the page.  This ensures consistent alignment when
   toggled into view.
 -->
-<div id="stockOnlyPanel" style="display:none; max-width:700px; margin: 12px auto; padding: 12px; border: 1px dashed #e5e5e5; border-radius: 8px;">
-  <label style="display:block; margin-bottom:6px;">Stock concentration (cells/mL)</label>
-  <input id="knownStockConc" type="number" min="0" step="1" placeholder="e.g. 1200000" style="width:260px; padding:8px;">
+<div id="stockOnlyPanel" class="widget-bg d-none" style="max-width:700px; margin:12px auto;">
+  <div class="mb-3">
+    <label class="form-label" for="knownStockConc">Stock concentration (cells/mL)</label>
+    <input id="knownStockConc" type="number" min="0" step="1" placeholder="e.g. 1200000" class="user-input w-100">
+  </div>
 </div>
 
 <!-- Freezing panel (visible when purposeMode=freezing) -->
@@ -88,22 +90,22 @@
   Constrain the freezing panel to the same width as the main widget and
   center it within the page for consistent layout.
 -->
-<div id="freezingPanel" style="display:none; max-width:700px; margin: 12px auto; padding: 12px; border: 1px dashed #e5e5e5; border-radius: 8px;">
-  <div style="display:flex; flex-wrap:wrap; gap:12px;">
-    <div style="min-width:200px;">
-      <label style="display:block; margin-bottom:6px;">Cells per vial</label>
-      <input id="cellsPerVial" type="number" min="1" step="1" placeholder="e.g. 1000000" style="width:220px; padding:8px;">
+<div id="freezingPanel" class="widget-bg d-none" style="max-width:700px; margin:12px auto;">
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label" for="cellsPerVial">Cells per vial</label>
+      <input id="cellsPerVial" type="number" min="1" step="1" placeholder="e.g. 1000000" class="user-input w-100">
     </div>
-    <div style="min-width:200px;">
-      <label style="display:block; margin-bottom:6px;">Volume per vial (mL)</label>
-      <input id="volPerVialMl" type="number" min="0.1" step="0.1" placeholder="e.g. 1.0" style="width:220px; padding:8px;">
+    <div class="col-md-4">
+      <label class="form-label" for="volPerVialMl">Volume per vial (mL)</label>
+      <input id="volPerVialMl" type="number" min="0.1" step="0.1" placeholder="e.g. 1.0" class="user-input w-100">
     </div>
-    <div style="min-width:200px;">
-      <label style="display:block; margin-bottom:6px;">Minimum vials (optional)</label>
-      <input id="minVials" type="number" min="1" step="1" placeholder="Leave blank" style="width:220px; padding:8px;">
+    <div class="col-md-4">
+      <label class="form-label" for="minVials">Minimum vials (optional)</label>
+      <input id="minVials" type="number" min="1" step="1" placeholder="Leave blank" class="user-input w-100">
     </div>
   </div>
-  <div style="margin-top:8px; font-size:13px; color:#666;">Freezing mode calculates vials needed from total cells (incl. overage) and outputs per‑vial + total volumes.</div>
+  <div class="mt-2" style="font-size:13px; color:#666;">Freezing mode calculates vials needed from total cells (incl. overage) and outputs per‑vial + total volumes.</div>
 </div>
 
 <!-- Co-culture panel removed: keep empty container to satisfy script references. -->
@@ -740,24 +742,24 @@
       const isStock = (mm?.value === 'stock');
       const isFreezing = (pm?.value === 'freezing');
       const isCo = (cc?.checked === true);
-      // Hide haemocytometer-only fields in stock mode
-      const haemIds = ['totalCount','squares','dilution','baseline','pbsBorder'];
-      haemIds.forEach(id=>{
-        const el = $(id);
-        // In this page, inputs live in .mb-3 containers rather than form-group/col
-        const grp = el ? (el.closest('.form-group') || el.closest('.col') || el.closest('.mb-3') || el.parentElement) : null;
-        if (grp) grp.style.display = isStock ? 'none' : '';
-      });
-      // Additionally hide the entire haemocytometer section wrapper and haem-specific result fields
-      const haemWrap = $('haemSection');
-      if (haemWrap) haemWrap.style.display = isStock ? 'none' : '';
+
+      $('haemSection')?.classList.toggle('d-none', isStock);
       const avgItem = $('outAvgSq')?.closest('.result-item');
-      if (avgItem) avgItem.style.display = isStock ? 'none' : '';
-      const concItem = $('outConc')?.closest('.result-item');
-      if (concItem) concItem.style.display = isStock ? 'none' : '';
-      $('stockOnlyPanel').style.display = isStock ? '' : 'none';
-      $('freezingPanel').style.display = isFreezing ? '' : 'none';
-      $('coCulturePanel').style.display = isCo ? '' : 'none';
+      if (avgItem) avgItem.classList.toggle('d-none', isStock);
+
+      $('stockOnlyPanel')?.classList.toggle('d-none', !isStock);
+      $('freezingPanel')?.classList.toggle('d-none', !isFreezing);
+      $('coCulturePanel')?.classList.toggle('d-none', !isCo);
+
+      ['plate','mode','wellMode','mediaPerWell','overage','optimise'].forEach(id=>{
+        const grp = $(id)?.closest('.mb-3');
+        if (grp) grp.classList.toggle('d-none', isFreezing);
+      });
+      ['targetCellDiv','confDiv','plateCountDiv','manualWellDiv','gridDiv'].forEach(id=>{
+        const el = $(id);
+        if (el) el.classList.toggle('d-none', isFreezing);
+      });
+
       try{ if (typeof validate==='function') validate(); }catch(_){}
       try{ if (typeof recalc==='function') recalc(); }catch(_){}
     }
