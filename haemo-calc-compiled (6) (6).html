@@ -1,0 +1,1346 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cell Culture Calculator</title>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .app-header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .app-header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+      margin-bottom: 10px;
+    }
+
+    .app-header p {
+      font-size: 1.1rem;
+      opacity: 0.95;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .grid-layout {
+      /* Always stack cards vertically so each sits on its own row rather than side‑by‑side.
+         This prevents mismatched heights and blank space when cards have different amounts
+         of content. The gap property controls vertical spacing between cards, and
+         margin-top creates space between the top mode card and the first card in the grid. */
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      /* Limit card width to mimic a mobile form factor on larger screens. Center cards horizontally */
+      width: 100%;
+      max-width: 550px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Disable translate on hover for cards so they don't shift position when moused over.
+       We keep the hover shadow effect for subtle feedback without moving the container. */
+    .card:hover {
+      /* Remove vertical movement on hover */
+      transform: none;
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+
+    .card-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #2d3748;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-icon {
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+
+    /* Mode selection card special styling */
+    .mode-card {
+      background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+    }
+
+    /* Haemocytometer card - Trypan Blue theme */
+    .haemo-card {
+      background: linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%);
+    }
+
+    .haemo-card::before {
+      background: linear-gradient(90deg, #0984e3, #74b9ff);
+    }
+
+    /* Cell culture media pink theme for seeding */
+    .seeding-card {
+      background: linear-gradient(135deg, #ffeef8 0%, #ffd4e8 100%);
+    }
+
+    .seeding-card::before {
+      background: linear-gradient(90deg, #ff6b9d, #feca57);
+    }
+
+    /* Freezing card - cool blue theme */
+    .freezing-card {
+      background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    }
+
+    .freezing-card::before {
+      background: linear-gradient(90deg, #2196f3, #64b5f6);
+    }
+
+    /* Results card - success green theme */
+    .results-card {
+      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    }
+
+    .results-card::before {
+      background: linear-gradient(90deg, #4caf50, #81c784);
+    }
+
+    /* Form styling */
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: #4a5568;
+      font-size: 0.95rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      background: white;
+    }
+
+    .form-control:focus {
+      outline: 2px solid #667eea;
+      outline-offset: 2px;
+    }
+
+    .form-control.invalid {
+      border-color: #f56565;
+      background: #fff5f5;
+    }
+
+    .form-control.readonly {
+      background: #f0f0f0;
+      border-style: dashed;
+    }
+
+    /* Mode toggles */
+    .mode-group {
+      /* Stack the mode selection inputs vertically to avoid cramped layouts when cards are
+         constrained to a mobile-like width. Each child spans the full width of the parent. */
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .mode-group > div {
+      width: 100%;
+    }
+
+    /* Results styling */
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .result-item {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .result-item.wide {
+      grid-column: 1 / -1;
+    }
+
+    .result-label {
+      font-size: 0.85rem;
+      color: #718096;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    .result-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #2d3748;
+      word-break: break-word;
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #f7fafc;
+    }
+
+    /* Instruction box */
+    .instruction-box {
+      background: linear-gradient(135deg, #fff9c4 0%, #ffecb3 100%);
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: #5d4037;
+      margin-top: 15px;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #636e72 0%, #2d3436 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(45, 52, 54, 0.3);
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(253, 203, 110, 0.3);
+    }
+
+    /* Stock concentration input with multiplier button */
+    .stock-input-wrapper {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+    }
+    .stock-input-wrapper input {
+      flex: 1;
+    }
+    .stock-input-wrapper .btn {
+      white-space: nowrap;
+    }
+
+    /* Adjust spacing above the export card to separate it from preceding content. */
+    #exportCard {
+      margin-top: 20px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    /* Table styling */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .data-table thead {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .data-table th {
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .data-table td {
+      padding: 10px 12px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 0.95rem;
+    }
+
+    /* Hide elements initially */
+    .hidden {
+      display: none !important;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .app-header h1 {
+        font-size: 1.8rem;
+      }
+      
+      .grid-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-header">
+    <h1>🧬 Cell Culture Calculator</h1>
+    <p>Professional tool for haemocytometer counting, plate seeding, and cell freezing</p>
+  </div>
+
+  <div class="container">
+    <!-- Mode Selection Card -->
+    <div class="card mode-card">
+      <h2 class="card-title">
+        <span class="card-icon">⚙️</span>
+        Setup Your Workflow
+      </h2>
+      <div class="mode-group">
+        <div class="form-group">
+          <label class="form-label">How will you provide concentration?</label>
+          <select id="measurementMode" class="form-control">
+            <option value="haem">I'm using a haemocytometer</option>
+            <option value="stock">I already know my stock concentration</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">What are you doing today?</label>
+          <select id="purposeMode" class="form-control">
+            <option value="seeding">Seeding plates</option>
+            <option value="freezing">Freezing down vials</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-layout">
+      <!-- Haemocytometer Card -->
+      <div id="haemoCard" class="card haemo-card">
+        <h2 class="card-title">
+          <span class="card-icon">🔬</span>
+          Haemocytometer Count
+        </h2>
+        
+        <div id="haemoFields">
+          <div class="form-group">
+            <label class="form-label">Total Cell Count</label>
+            <input id="totalCount" type="number" min="0" class="form-control" placeholder="Enter your count">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Number of Squares Counted</label>
+            <select id="squares" class="form-control">
+              <option>1</option>
+              <option>2</option>
+              <option>3</option>
+              <option selected>4</option>
+              <option>5</option>
+              <option>6</option>
+              <option>7</option>
+              <option>8</option>
+              <option>9</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Dilution Factor (1:x)</label>
+            <input id="dilution" type="number" min="1" step="1" value="5" class="form-control">
+          </div>
+        </div>
+
+        <!-- Stock concentration input -->
+        <div id="stockPanel" class="form-group hidden">
+          <label class="form-label">Stock Concentration (cells/mL)</label>
+          <div class="stock-input-wrapper">
+            <input id="knownStockConc" type="number" min="0" step="1" placeholder="e.g. 1200000" class="form-control">
+            <button id="millionBtn" type="button" class="btn btn-secondary">×10⁶</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Plate Seeding Card -->
+      <div id="seedingCard" class="card seeding-card">
+        <h2 class="card-title">
+          <span class="card-icon">🧫</span>
+          Plate Seeding Setup
+        </h2>
+        
+        <div class="form-group">
+          <label class="form-label">Plate Type</label>
+          <select id="plate" class="form-control">
+            <option value="96" selected>96-well plate</option>
+            <option value="48">48-well plate</option>
+            <option value="24">24-well plate</option>
+            <option value="12">12-well plate</option>
+            <option value="6">6-well plate</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Seeding Mode</label>
+          <select id="mode" class="form-control">
+            <option value="cells" selected>Target cells/well</option>
+            <option value="conf">Target % confluence</option>
+          </select>
+        </div>
+
+        <div id="targetCellDiv" class="form-group">
+          <label class="form-label">Target Cells per Well</label>
+          <input id="targetCells" type="number" min="1" class="form-control" placeholder="e.g. 10000">
+        </div>
+
+        <div id="confDiv" class="form-group hidden">
+          <label class="form-label">Target % Confluence</label>
+          <input id="targetConf" type="number" min="1" max="100" class="form-control" placeholder="e.g. 70">
+          <label class="form-label" style="margin-top: 10px;">Cells at 100% confluence (optional)</label>
+          <input id="baseline" type="number" min="1" class="form-control" placeholder="Leave blank for default">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Well Calculation Method</label>
+          <select id="wellMode" class="form-control">
+            <option value="manual" selected>Manual entry</option>
+            <option value="plates">Whole plates</option>
+            <option value="grid">Columns × Rows</option>
+          </select>
+        </div>
+
+        <div id="manualWellDiv" class="form-group">
+          <label class="form-label">Number of Wells</label>
+          <input id="numWells" type="number" min="1" max="96" class="form-control" placeholder="e.g. 24">
+          <label class="form-label" style="margin-top: 10px;">Replicate Plates</label>
+          <input id="numManualPlates" type="number" min="1" value="1" class="form-control">
+        </div>
+
+        <div id="plateCountDiv" class="form-group hidden">
+          <label class="form-label">Number of Plates</label>
+          <input id="numPlates" type="number" min="0.5" step="0.5" class="form-control" placeholder="e.g. 2">
+          <label class="form-label" style="margin-top: 10px;">PBS Border?</label>
+          <select id="pbsBorder" class="form-control">
+            <option value="no" selected>No</option>
+            <option value="yes">Yes</option>
+          </select>
+        </div>
+
+        <div id="gridDiv" class="form-group hidden">
+          <label class="form-label">Columns</label>
+          <input id="numCols" type="number" min="1" max="12" class="form-control">
+          <label class="form-label" style="margin-top: 10px;">Rows</label>
+          <input id="numRows" type="number" min="1" max="8" class="form-control">
+          <label class="form-label" style="margin-top: 10px;">Replicate Plates</label>
+          <input id="numGridPlates" type="number" min="1" value="1" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label id="volLabel" class="form-label">Volume per Well (µL)</label>
+          <input id="mediaPerWell" type="number" min="1" class="form-control" value="100">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Extra Volume (%)</label>
+          <input id="overage" type="number" min="0" value="10" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Optimize For</label>
+          <select id="optimise" class="form-control">
+            <option value="least" selected>Least cells required</option>
+            <option value="easy">Easy pipetting volumes</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Freezing Card -->
+      <div id="freezingCard" class="card freezing-card hidden">
+        <h2 class="card-title">
+          <span class="card-icon">❄️</span>
+          Freezing Setup
+        </h2>
+        
+        <div class="form-group">
+          <label class="form-label">Cells per Vial</label>
+          <input id="cellsPerVial" type="number" min="1" step="1" placeholder="e.g. 1000000" class="form-control">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Volume per Vial (mL)</label>
+          <input id="volPerVialMl" type="number" min="0.1" step="0.1" placeholder="e.g. 1.0" class="form-control">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Minimum Vials (optional)</label>
+          <input id="minVials" type="number" min="1" step="1" placeholder="Leave blank for auto" class="form-control">
+        </div>
+        
+        <p style="font-size: 0.9rem; color: #718096; margin-top: 10px;">
+          💡 Enter either cells/vial or volume/vial - the other will auto-calculate
+        </p>
+      </div>
+    </div>
+
+    <!-- Results Cards -->
+    <div id="seedingResults" class="card results-card">
+      <h2 class="card-title">
+        <span class="card-icon">📊</span>
+        Seeding Results
+      </h2>
+      
+      <div class="result-grid">
+        <div class="result-item">
+          <div class="result-label">Avg cells/square</div>
+          <input id="outAvgSq" class="result-value" type="text" readonly>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Concentration</div>
+          <input id="outConc" class="result-value" type="text" readonly>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Wells to seed</div>
+          <input id="outWells" class="result-value" type="text" readonly>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Cells per well</div>
+          <input id="outCellsPerWell" class="result-value" type="text" readonly>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Total cells needed</div>
+          <input id="outTotalCells" class="result-value" type="text" readonly>
+        </div>
+        <div class="result-item">
+          <div class="result-label">With <span id="extraPct">10</span>% extra</div>
+          <input id="outOverCells" class="result-value" type="text" readonly>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Required conc.</div>
+          <input id="outReqConc" class="result-value" type="text" readonly>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Final volume</div>
+          <input id="outMixTotal" class="result-value" type="text" readonly>
+        </div>
+        <div class="result-item wide">
+          <div class="result-label">Cell suspension volume</div>
+          <input id="outOrigVol" class="result-value" type="text" readonly style="background: #eef9f1; border-color: #cfe9d7;">
+        </div>
+        <div class="result-item wide">
+          <div class="result-label">Media volume</div>
+          <input id="outMediaVol" class="result-value" type="text" readonly style="background: #ffecec; border-color: #f4b5b5;">
+        </div>
+      </div>
+      
+      <div id="instructionBox" class="instruction-box"></div>
+    </div>
+
+    <div id="freezingResults" class="card results-card hidden">
+      <h2 class="card-title">
+        <span class="card-icon">📊</span>
+        Freezing Results
+      </h2>
+      
+      <div class="result-grid">
+        <div class="result-item">
+          <div class="result-label">Concentration</div>
+          <input id="fr_conc" class="result-value" type="text" readonly>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Cells/vial</div>
+          <input id="fr_cells_per_vial" class="result-value" type="text" readonly>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Volume/vial</div>
+          <input id="fr_vol_per_vial" class="result-value" type="text" readonly>
+        </div>
+        <div class="result-item">
+          <div class="result-label">Number of vials</div>
+          <input id="fr_num_vials" class="result-value" type="text" readonly>
+        </div>
+        <div class="result-item wide">
+          <div class="result-label">Total cells required</div>
+          <input id="fr_total_cells" class="result-value" type="text" readonly>
+        </div>
+        <div class="result-item wide">
+          <div class="result-label">Total volume required</div>
+          <input id="fr_total_vol" class="result-value" type="text" readonly>
+        </div>
+        <div class="result-item wide">
+          <div class="result-label">Cell suspension needed</div>
+          <input id="fr_cell_vol" class="result-value" type="text" readonly style="background: #eef9f1; border-color: #cfe9d7;">
+        </div>
+        <div class="result-item wide">
+          <div class="result-label">Freezing media needed</div>
+          <input id="fr_media_vol" class="result-value" type="text" readonly style="background: #e3f2fd; border-color: #90caf9;">
+        </div>
+      </div>
+      
+      <div id="freezingInstructionBox" class="instruction-box"></div>
+    </div>
+
+    <!-- Export Card -->
+    <div id="exportCard" class="card">
+      <h2 class="card-title">
+        <span class="card-icon">💾</span>
+        Data Export & Session
+      </h2>
+
+      <!-- Name entry for saved counts -->
+      <div class="form-group">
+        <label class="form-label">Count Name</label>
+        <input id="countName" type="text" class="form-control" placeholder="e.g. Cell line A">
+      </div>
+      
+      <div class="button-group">
+        <button id="saveCountBtn" class="btn btn-primary">Save Count</button>
+        <button id="downloadCsvBtn" class="btn btn-secondary hidden">Download CSV</button>
+        <button id="resetSessionBtn" class="btn btn-warning">New Session</button>
+      </div>
+      
+      <table id="countsTable" class="data-table hidden">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Avg/sq</th>
+            <th>Conc</th>
+            <th>Cells/well</th>
+            <th>Cell Vol</th>
+            <th>Media Vol</th>
+          </tr>
+        </thead>
+        <tbody id="countsTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      // Constants
+      const CORNING_BASELINE = {
+        "96": 32000,
+        "48": 50000,
+        "24": 190000,
+        "12": 380000,
+        "6": 600000
+      };
+
+      const PLATE_GEOM = {
+        "96": [8, 12],
+        "48": [6, 8],
+        "24": [4, 6],
+        "12": [3, 4],
+        "6": [2, 3]
+      };
+
+      const DEFAULT_VOL = {
+        "96": 0.100,
+        "48": 0.250,
+        "24": 0.500,
+        "12": 1.000,
+        "6": 2.000
+      };
+
+      // Storage
+      const STORAGE_KEY = 'cell_calc_v6';
+      const MS_TTL = 24 * 60 * 60 * 1000;
+      window.countsList = [];
+
+      // Utilities
+      const $ = id => document.getElementById(id);
+      const nz = (v, d = 0) => {
+        const n = parseFloat(v);
+        return isNaN(n) ? d : n;
+      };
+      const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+      const fmtVol = ml => ml < 1 ? Math.round(ml * 1000) + ' µL' : ml.toFixed(2) + ' mL';
+
+      // UI Management
+      function updateVisibility() {
+        const measurementMode = $('measurementMode')?.value || 'haem';
+        const purposeMode = $('purposeMode')?.value || 'seeding';
+        
+        // Measurement mode
+        $('haemoFields')?.classList.toggle('hidden', measurementMode !== 'haem');
+        $('stockPanel')?.classList.toggle('hidden', measurementMode !== 'stock');
+
+        // Purpose mode
+        $('seedingCard')?.classList.toggle('hidden', purposeMode !== 'seeding');
+        $('freezingCard')?.classList.toggle('hidden', purposeMode !== 'freezing');
+        $('seedingResults')?.classList.toggle('hidden', purposeMode !== 'seeding');
+        $('freezingResults')?.classList.toggle('hidden', purposeMode !== 'freezing');
+        $('exportCard')?.classList.toggle('hidden', purposeMode !== 'seeding');
+
+        // Seeding sub-modes
+        if (purposeMode === 'seeding') {
+          const seedingMode = $('mode')?.value || 'cells';
+          $('targetCellDiv')?.classList.toggle('hidden', seedingMode !== 'cells');
+          $('confDiv')?.classList.toggle('hidden', seedingMode !== 'conf');
+          
+          const wellMode = $('wellMode')?.value || 'manual';
+          $('manualWellDiv')?.classList.toggle('hidden', wellMode !== 'manual');
+          $('plateCountDiv')?.classList.toggle('hidden', wellMode !== 'plates');
+          $('gridDiv')?.classList.toggle('hidden', wellMode !== 'grid');
+        }
+
+        updateVolLabel();
+      }
+
+      function updateVolLabel() {
+        const plate = $('plate')?.value || '96';
+        const isMl = plate === '12' || plate === '6';
+        const label = $('volLabel');
+        if (label) {
+          label.textContent = `Volume per Well (${isMl ? 'mL' : 'µL'})`;
+        }
+      }
+
+      function setDefaultVolume() {
+        const plate = $('plate')?.value || '96';
+        const ml = DEFAULT_VOL[plate] || 0.100;
+        const input = $('mediaPerWell');
+        if (!input) return;
+        
+        if (plate === '12' || plate === '6') {
+          input.value = ml.toFixed(2);
+          input.min = '0.1';
+        } else {
+          input.value = Math.round(ml * 1000);
+          input.min = '1';
+        }
+      }
+
+      // Calculations
+      function getStockConcentration() {
+        if ($('measurementMode')?.value === 'stock') {
+          return nz($('knownStockConc')?.value, 0);
+        }
+        
+        const total = Math.max(0, nz($('totalCount')?.value, 0));
+        const squares = clamp(nz($('squares')?.value, 4), 1, 9);
+        const dil = Math.max(1, nz($('dilution')?.value, 5));
+        const avg = total / squares;
+        return avg / 0.0001 * dil;
+      }
+
+      function calculateHaemocytometer() {
+        const total = Math.max(0, nz($('totalCount')?.value, 0));
+        const squares = clamp(nz($('squares')?.value, 4), 1, 9);
+        const dil = Math.max(1, nz($('dilution')?.value, 5));
+        const avg = total / squares;
+        const cMl = avg / 0.0001 * dil;
+        
+        if ($('measurementMode')?.value === 'haem') {
+          $('outAvgSq').value = avg ? avg.toFixed(2) : '';
+        } else {
+          $('outAvgSq').value = '';
+        }
+        $('outConc').value = cMl ? Math.round(cMl).toLocaleString() + ' cells/mL' : '';
+        
+        return { avg, cMl };
+      }
+
+      function totalWells() {
+        const wm = $('wellMode')?.value || 'manual';
+        const plate = $('plate')?.value || '96';
+        
+        if (wm === 'manual') {
+          const wells = clamp(nz($('numWells')?.value, 0), 1, parseInt(plate));
+          const reps = Math.max(1, nz($('numManualPlates')?.value, 1));
+          return wells * reps;
+        }
+        
+        if (wm === 'grid') {
+          const [maxR, maxC] = PLATE_GEOM[plate];
+          const c = clamp(nz($('numCols')?.value, 0), 1, maxC);
+          const r = clamp(nz($('numRows')?.value, 0), 1, maxR);
+          const p = Math.max(1, nz($('numGridPlates')?.value, 1));
+          return c * r * p;
+        }
+        
+        // Plates mode
+        const pbs = ($('pbsBorder')?.value || 'no') === 'yes';
+        const [r, c] = PLATE_GEOM[plate];
+        const per = pbs ? Math.max(r - 2, 0) * Math.max(c - 2, 0) : parseInt(plate);
+        const plates = Math.max(0.5, nz($('numPlates')?.value, 0));
+        return per * plates;
+      }
+
+      function updatePlateConstraints() {
+        const plate = $('plate')?.value || '96';
+        const plateNum = parseInt(plate);
+        const [maxRows, maxCols] = PLATE_GEOM[plate];
+        
+        // Update well number constraints and placeholder
+        const numWells = $('numWells');
+        if (numWells) {
+          numWells.max = plateNum;
+          numWells.placeholder = `e.g. ${Math.min(24, plateNum)}`;
+        }
+        
+        // Update column/row constraints and labels
+        const numCols = $('numCols');
+        const numRows = $('numRows');
+        const colLabel = $('colLabel');
+        const rowLabel = $('rowLabel');
+        
+        if (numCols) {
+          numCols.max = maxCols;
+          numCols.placeholder = `e.g. ${Math.min(3, maxCols)}`;
+        }
+        if (numRows) {
+          numRows.max = maxRows;
+          numRows.placeholder = `e.g. ${Math.min(2, maxRows)}`;
+        }
+        if (colLabel) colLabel.textContent = `Columns (1-${maxCols})`;
+        if (rowLabel) rowLabel.textContent = `Rows (1-${maxRows})`;
+      }
+
+      function handleMillionCells() {
+        const checkbox = $('millionCells');
+        const input = $('knownStockConc');
+        if (!checkbox || !input) return;
+        
+        if (checkbox.checked) {
+          // Convert to millions
+          const current = parseFloat(input.value) || 0;
+          if (current > 1000) {
+            input.value = (current / 1000000).toFixed(2);
+          }
+          input.step = '0.01';
+          input.placeholder = 'e.g. 1.2';
+        } else {
+          // Convert back to cells/mL
+          const current = parseFloat(input.value) || 0;
+          if (current < 1000) {
+            input.value = Math.round(current * 1000000);
+          }
+          input.step = '1';
+          input.placeholder = 'e.g. 1200000';
+        }
+      }
+
+      function targetCellsPerWell() {
+        if (($('mode')?.value || 'cells') === 'cells') {
+          return Math.max(1, nz($('targetCells')?.value, 0));
+        }
+        const pct = clamp(nz($('targetConf')?.value, 0), 1, 100);
+        const baseline = nz($('baseline')?.value) || CORNING_BASELINE[$('plate')?.value || '96'] || 0;
+        return baseline * (pct / 100);
+      }
+
+      function calculateSeeding() {
+        const stockConc = getStockConcentration();
+        calculateHaemocytometer();
+        
+        const wells = Math.round(totalWells());
+        const targetPerW = targetCellsPerWell();
+        const overPct = Math.max(0, nz($('overage')?.value, 10));
+        
+        $('extraPct').textContent = String(overPct);
+        
+        const plate = $('plate')?.value || '96';
+        const isMlInput = plate === '12' || plate === '6';
+        const rawVol = nz($('mediaPerWell')?.value, 0);
+        const perWellMl = isMlInput ? rawVol : (rawVol / 1000);
+        
+        const totalCells = targetPerW * wells;
+        const totalCellsOver = totalCells * (1 + overPct / 100);
+        
+        const concentration = ($('measurementMode')?.value === 'stock') ? stockConc : getStockConcentration();
+        
+        const reqMixConc = perWellMl > 0 ? (targetPerW / perWellMl) : 0;
+        const baseFinalMl = perWellMl * wells * (1 + overPct / 100);
+        
+        // Round final volume
+        let finalMixMl = baseFinalMl;
+        const mode = $('optimise')?.value || 'least';
+        if (finalMixMl < 1) {
+          const step = mode === 'easy' ? 0.050 : 0.010;
+          finalMixMl = Math.max(step, Math.round(finalMixMl / step) * step);
+        } else {
+          const step = mode === 'easy' ? 0.5 : 0.1;
+          finalMixMl = Math.max(step, Math.round(finalMixMl / step) * step);
+        }
+        
+        let stockInMixMl = concentration > 0 ? (reqMixConc / concentration) * finalMixMl : 0;
+        let mediaMl = Math.max(0, finalMixMl - stockInMixMl);
+        
+        // Apply ease scaling
+        if (mode === 'easy' && mediaMl > 0) {
+          const step = mediaMl < 1 ? 0.050 : 0.5;
+          const targetMedia = Math.ceil(mediaMl / step) * step;
+          const scale = targetMedia / mediaMl;
+          mediaMl = targetMedia;
+          stockInMixMl *= scale;
+          finalMixMl = mediaMl + stockInMixMl;
+        }
+        
+        // Update outputs
+        if ($('measurementMode')?.value === 'stock') {
+          $('outConc').value = Math.round(stockConc).toLocaleString() + ' cells/mL';
+        }
+        
+        $('outWells').value = wells.toString();
+        $('outCellsPerWell').value = Math.round(targetPerW).toLocaleString() + ' cells';
+        $('outTotalCells').value = Math.round(totalCells).toLocaleString();
+        $('outOverCells').value = Math.round(totalCellsOver).toLocaleString();
+        $('outOrigVol').value = fmtVol(stockInMixMl);
+        $('outReqConc').value = Math.round(reqMixConc).toLocaleString() + ' cells/mL';
+        $('outMixTotal').value = fmtVol(finalMixMl);
+        $('outMediaVol').value = fmtVol(mediaMl);
+        
+        // Instruction
+        const perWellText = fmtVol(perWellMl);
+        const seedMode = $('mode')?.value || 'cells';
+        const tail = seedMode === 'cells'
+          ? `${perWellText} per well for ${Math.round(targetPerW).toLocaleString()} cells/well`
+          : `${perWellText} per well for ${clamp(nz($('targetConf')?.value, 0), 1, 100)}% confluence`;
+        
+        const instruction = `Take ${fmtVol(stockInMixMl)} of cell suspension and dilute in ${fmtVol(mediaMl)} of media to a final concentration of ${Math.round(reqMixConc).toLocaleString()} cells/mL. Add ${tail}.`;
+        
+        $('instructionBox').innerHTML = instruction;
+      }
+
+      function calculateFreezing() {
+        const stockConc = getStockConcentration();
+        const cellsPerVial = nz($('cellsPerVial')?.value, 0);
+        const volPerVialMl = nz($('volPerVialMl')?.value, 0);
+        const minVials = nz($('minVials')?.value, 0);
+        
+        let finalCellsPerVial = cellsPerVial;
+        let finalVolPerVial = volPerVialMl;
+        
+        if (cellsPerVial === 0 && volPerVialMl > 0 && stockConc > 0) {
+          finalCellsPerVial = stockConc * volPerVialMl;
+        } else if (volPerVialMl === 0 && cellsPerVial > 0 && stockConc > 0) {
+          finalVolPerVial = cellsPerVial / stockConc;
+        }
+        
+        let numVials = 0;
+        if (finalCellsPerVial > 0) {
+          const totalCellsAvail = stockConc * 10; // Default 10mL
+          numVials = Math.ceil(totalCellsAvail / finalCellsPerVial);
+          if (minVials > 0) {
+            numVials = Math.max(numVials, minVials);
+          }
+        }
+        
+        const cellVolPerVialMl = (stockConc > 0 && finalCellsPerVial > 0) ? (finalCellsPerVial / stockConc) : 0;
+        const mediaPerVialMl = Math.max(0, finalVolPerVial - cellVolPerVialMl);
+        const totalCellVolMl = cellVolPerVialMl * numVials;
+        const totalMediaMl = mediaPerVialMl * numVials;
+        const totalCells = finalCellsPerVial * numVials;
+        const totalVolMl = finalVolPerVial * numVials;
+        
+        $('fr_conc').value = stockConc > 0 ? Math.round(stockConc).toLocaleString() + ' cells/mL' : '';
+        $('fr_cells_per_vial').value = finalCellsPerVial > 0 ? Math.round(finalCellsPerVial).toLocaleString() + ' cells' : '';
+        $('fr_vol_per_vial').value = finalVolPerVial > 0 ? finalVolPerVial.toFixed(2) + ' mL' : '';
+        $('fr_num_vials').value = numVials > 0 ? numVials.toString() : '';
+        $('fr_total_cells').value = totalCells > 0 ? Math.round(totalCells).toLocaleString() + ' cells' : '';
+        $('fr_total_vol').value = totalVolMl > 0 ? totalVolMl.toFixed(2) + ' mL' : '';
+        $('fr_cell_vol').value = totalCellVolMl > 0 ? totalCellVolMl.toFixed(2) + ' mL' : '';
+        $('fr_media_vol').value = totalMediaMl > 0 ? totalMediaMl.toFixed(2) + ' mL' : '';
+        
+        if (numVials > 0 && finalCellsPerVial > 0 && finalVolPerVial > 0) {
+          const instruction = `Prepare ${numVials} vials with ${Math.round(finalCellsPerVial).toLocaleString()} cells in ${finalVolPerVial.toFixed(2)} mL each. Per vial: ${fmtVol(cellVolPerVialMl)} cells + ${fmtVol(mediaPerVialMl)} freezing media.`;
+          $('freezingInstructionBox').textContent = instruction;
+        }
+      }
+
+      function validate() {
+        let valid = true;
+        document.querySelectorAll('.invalid').forEach(e => e.classList.remove('invalid'));
+        
+        const measurementMode = $('measurementMode')?.value || 'haem';
+        const purposeMode = $('purposeMode')?.value || 'seeding';
+        
+        // Check required fields
+        const requiredFields = [];
+        
+        if (measurementMode === 'haem') {
+          requiredFields.push('totalCount', 'squares', 'dilution');
+        } else {
+          requiredFields.push('knownStockConc');
+        }
+        
+        if (purposeMode === 'seeding') {
+          requiredFields.push('plate', 'mediaPerWell');
+          if ($('mode')?.value === 'cells') {
+            requiredFields.push('targetCells');
+          } else {
+            requiredFields.push('targetConf');
+          }
+          
+          const wm = $('wellMode')?.value || 'manual';
+          if (wm === 'manual') requiredFields.push('numWells');
+          if (wm === 'plates') requiredFields.push('numPlates');
+          if (wm === 'grid') requiredFields.push('numCols', 'numRows');
+        }
+        
+        requiredFields.forEach(id => {
+          const el = $(id);
+          if (el && (!el.value || el.value.trim() === '')) {
+            el.classList.add('invalid');
+            valid = false;
+          }
+        });
+        
+        return valid;
+      }
+
+      function recalc() {
+        if (!validate()) {
+          // Clear outputs if invalid
+          ['outAvgSq', 'outConc', 'outWells', 'outCellsPerWell', 'outTotalCells', 'outOverCells',
+           'outOrigVol', 'outReqConc', 'outMixTotal', 'outMediaVol'].forEach(id => {
+            const el = $(id);
+            if (el) el.value = '';
+          });
+          $('instructionBox').innerHTML = '';
+          return;
+        }
+        
+        const purposeMode = $('purposeMode')?.value || 'seeding';
+        
+        if (purposeMode === 'seeding') {
+          calculateSeeding();
+        } else {
+          calculateHaemocytometer();
+          calculateFreezing();
+        }
+      }
+
+      // Freezing field locking
+      function updateFreezingFieldLocking() {
+        const a = $('cellsPerVial');
+        const b = $('volPerVialMl');
+        if (!a || !b) return;
+        
+        const purposeMode = $('purposeMode')?.value || 'seeding';
+        if (purposeMode !== 'freezing') {
+          a.readOnly = false;
+          b.readOnly = false;
+          a.classList.remove('readonly');
+          b.classList.remove('readonly');
+          return;
+        }
+        
+        const aFilled = a.value !== '' && !isNaN(parseFloat(a.value));
+        const bFilled = b.value !== '' && !isNaN(parseFloat(b.value));
+        
+        if (aFilled && !bFilled) {
+          b.readOnly = true;
+          b.classList.add('readonly');
+          b.placeholder = 'Auto-calculated';
+        } else if (!aFilled && bFilled) {
+          a.readOnly = true;
+          a.classList.add('readonly');
+          a.placeholder = 'Auto-calculated';
+        } else {
+          a.readOnly = false;
+          b.readOnly = false;
+          a.classList.remove('readonly');
+          b.classList.remove('readonly');
+          a.placeholder = 'e.g. 1000000';
+          b.placeholder = 'e.g. 1.0';
+        }
+      }
+
+      // Data management
+      function saveCount() {
+        // Build a row object from current outputs and the provided name
+        const row = {
+          name: $('countName')?.value || '',
+          avg: $('outAvgSq')?.value || '',
+          conc: $('outConc')?.value || '',
+          cellsPerWell: $('outCellsPerWell')?.value || '',
+          origVol: $('outOrigVol')?.value || '',
+          mediaVol: $('outMediaVol')?.value || '',
+          finalVol: $('outMixTotal')?.value || ''
+        };
+        
+        window.countsList.push(row);
+        // Clear the name field after saving
+        const nameInput = $('countName');
+        if (nameInput) nameInput.value = '';
+        
+        renderTable();
+        saveState();
+      }
+
+      function renderTable() {
+        const tbody = $('countsTableBody');
+        if (!tbody) return;
+        
+        tbody.innerHTML = '';
+        window.countsList.forEach((r, i) => {
+          const tr = document.createElement('tr');
+          // First cell contains the index and a delete button
+          const indexTd = document.createElement('td');
+          const indexSpan = document.createElement('span');
+          indexSpan.textContent = i + 1;
+          indexSpan.style.marginRight = '8px';
+          const delBtn = document.createElement('button');
+          delBtn.textContent = '×';
+          delBtn.title = 'Delete';
+          delBtn.className = 'btn btn-warning';
+          delBtn.style.padding = '2px 6px';
+          delBtn.style.fontSize = '0.8rem';
+          delBtn.addEventListener('click', () => {
+            window.countsList.splice(i, 1);
+            renderTable();
+            saveState();
+          });
+          indexTd.appendChild(indexSpan);
+          indexTd.appendChild(delBtn);
+          tr.appendChild(indexTd);
+          // Populate remaining cells: name and values (omit final volume)
+          const values = [r.name || '', r.avg, r.conc, r.cellsPerWell, r.origVol, r.mediaVol];
+          values.forEach(v => {
+            const td = document.createElement('td');
+            td.textContent = v || '';
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+        
+        $('countsTable')?.classList.toggle('hidden', window.countsList.length === 0);
+        $('downloadCsvBtn')?.classList.toggle('hidden', window.countsList.length === 0);
+      }
+
+      function downloadCsv() {
+        if (!window.countsList.length) return;
+        
+        const headers = ['#', 'Name', 'Avg/sq', 'Conc', 'Cells/well', 'Cell Vol', 'Media Vol', 'Final Vol'];
+        let csv = headers.join(',') + '\n';
+        
+        window.countsList.forEach((r, idx) => {
+          csv += [idx + 1, r.name || '', r.avg, r.conc, r.cellsPerWell, r.origVol, r.mediaVol, r.finalVol].join(',') + '\n';
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'cell_counts.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function saveState() {
+        const inputs = {};
+        document.querySelectorAll('input, select').forEach(el => {
+          if (el.id) inputs[el.id] = el.value;
+        });
+        
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          savedAt: Date.now(),
+          inputs,
+          countsList: window.countsList
+        }));
+      }
+
+      function loadState() {
+        try {
+          const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+          if (data.savedAt && Date.now() - data.savedAt < MS_TTL) {
+            Object.entries(data.inputs || {}).forEach(([id, value]) => {
+              const el = $(id);
+              if (el) el.value = value;
+            });
+            window.countsList = data.countsList || [];
+            renderTable();
+          }
+        } catch (e) {}
+      }
+
+      // Initialize
+      function init() {
+        loadState();
+        
+        // Event listeners
+        ['measurementMode', 'purposeMode', 'mode', 'wellMode'].forEach(id => {
+          $(id)?.addEventListener('change', () => {
+            updateVisibility();
+            recalc();
+          });
+        });
+        
+        $('plate')?.addEventListener('change', () => {
+          setDefaultVolume();
+          updateVolLabel();
+          updatePlateConstraints();
+          
+          // Clear invalid values when plate changes
+          const plate = $('plate')?.value || '96';
+          const plateNum = parseInt(plate);
+          const [maxRows, maxCols] = PLATE_GEOM[plate];
+          
+          const numWells = $('numWells');
+          if (numWells && parseInt(numWells.value) > plateNum) {
+            numWells.value = '';
+          }
+          
+          const numCols = $('numCols');
+          if (numCols && parseInt(numCols.value) > maxCols) {
+            numCols.value = '';
+          }
+          
+          const numRows = $('numRows');
+          if (numRows && parseInt(numRows.value) > maxRows) {
+            numRows.value = '';
+          }
+          
+          recalc();
+        });
+        
+        // Million cells button: multiply the entered stock concentration by 10^6 for convenience
+        $('millionBtn')?.addEventListener('click', () => {
+          const input = $('knownStockConc');
+          if (!input) return;
+          const current = parseFloat(input.value) || 0;
+          // Multiply by one million and update the field. Do not change step.
+          input.value = (current * 1000000).toString();
+          recalc();
+        });
+        
+        // Enforce constraints on input
+        $('numWells')?.addEventListener('input', (e) => {
+          const plate = $('plate')?.value || '96';
+          const max = parseInt(plate);
+          if (parseInt(e.target.value) > max) {
+            e.target.value = max;
+          }
+        });
+        
+        $('numCols')?.addEventListener('input', (e) => {
+          const plate = $('plate')?.value || '96';
+          const [_, maxCols] = PLATE_GEOM[plate];
+          if (parseInt(e.target.value) > maxCols) {
+            e.target.value = maxCols;
+          }
+        });
+        
+        $('numRows')?.addEventListener('input', (e) => {
+          const plate = $('plate')?.value || '96';
+          const [maxRows, _] = PLATE_GEOM[plate];
+          if (parseInt(e.target.value) > maxRows) {
+            e.target.value = maxRows;
+          }
+        });
+        
+        document.querySelectorAll('input, select').forEach(el => {
+          el.addEventListener('input', () => {
+            if (el.id === 'cellsPerVial' || el.id === 'volPerVialMl') {
+              updateFreezingFieldLocking();
+            }
+            recalc();
+            saveState();
+          });
+        });
+        
+        $('saveCountBtn')?.addEventListener('click', saveCount);
+        $('downloadCsvBtn')?.addEventListener('click', downloadCsv);
+        $('resetSessionBtn')?.addEventListener('click', () => {
+          localStorage.removeItem(STORAGE_KEY);
+          location.reload();
+        });
+        
+        // Initial setup
+        updateVisibility();
+        setDefaultVolume();
+        updatePlateConstraints();
+        updateFreezingFieldLocking();
+        recalc();
+      }
+
+      // Start
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</body>
+</html>
